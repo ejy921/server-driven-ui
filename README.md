@@ -1,4 +1,4 @@
-Front-end UI components with NO HTML/CSS and only the backend.
+Front-end UI components rendered by the backend with no HTML/CSS.
 
 In this project, I wrote code for creating UI components that visualize a order processing system.
 
