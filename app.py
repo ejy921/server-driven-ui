@@ -28,93 +28,6 @@ UPDATE_PRODUCT = """UPDATE products
                 SET {fields_to_update}
                 WHERE product_id = %s"""
 
-
-# # insert customer into PostgreSQL, or update if already exists
-# def insert_or_update_customer(cust_data):
-#     try:
-#         cursor.execute(GET_CUSTOMER, cust_data["customer_id"])
-#         results = cursor.fetchone()
-
-#         # if customer already exists
-#         if results:
-#             customer_id, name, email, address = results
-#             updates = []
-#             update_values = []
-#             if cust_data["name"] != name:
-#                 updates.append("name = %s")
-#                 update_values.append(cust_data["name"])
-
-#             if cust_data["email"] != email:
-#                 updates.append("email = %s")
-#                 update_values.append(cust_data["email"])
-            
-#             if cust_data["address"] != json.loads(address):
-#                 updates.append("address = %s")
-#                 update_values.append(json.dumps(cust_data["address"]))
-            
-#             if updates:
-#                 # Use dynamically generated fields for the update
-#                 update_query = UPDATE_CUSTOMER.format(fields_to_update=", ".join(updates))
-#                 update_values.append(customer_id)
-#                 cursor.execute(update_query, tuple(update_values))
-#                 print(f"Customer {cust_data['name']} ({cust_data['customer_id']}) updated.")
-#             else:
-#                 print(f"No changes for customer {cust_data['name']} ({cust_data['customer_id']}).")
-
-#         else:
-#             # insert customer if not exist
-#             customer_id = cursor.fetchone()[0]
-#             cursor.execute(INSERT_CUSTOMER, 
-#                            (cust_data['customer_id'], cust_data["name"], cust_data["email"], json.dumps(cust_data["address"])))
-#             print(f"Customer {cust_data['name']} inserted with ID {customer_id}.")   
-        
-#     except Exception:
-#         print("Error inserting customer")
-#         conn.rollback()
-#         return None
-    
-
-# # insert customer into PostgreSQL, or update if already exists
-# def insert_or_update_product(product_data):
-#     try:
-#         cursor.execute(GET_PRODUCT, product_data["product_id"])
-#         results = cursor.fetchone()
-
-#         # if customer already exists
-#         if results:
-#             product_id, name, price = results
-#             updates = []
-#             update_values = []
-#             if product_data["name"] != name:
-#                 updates.append("name = %s")
-#                 update_values.append(product_data["name"])
-
-#             if product_data["price"] != price:
-#                 updates.append("price = %s")
-#                 update_values.append(product_data["price"])
-            
-#             if updates:
-#                 # Use dynamically generated fields for the update
-#                 update_query = UPDATE_PRODUCT.format(fields_to_update=", ".join(updates))
-#                 update_values.append(product_id)
-#                 cursor.execute(update_query, tuple(update_values))
-#                 print(f"Product {product_data['name']} ({product_data['product_id']}) updated.")
-#             else:
-#                 print(f"No changes for customer {product_data['name']} ({product_data['product_id']}).")
-
-#         else:
-#             # insert product if not exist
-#             product_id = cursor.fetchone()[0]
-#             cursor.execute(INSERT_PRODUCT, 
-#                            (product_data['product_id'], product_data["name"], product_data["price"]))
-#             print(f"Customer {product_data['name']} inserted with ID {product_id}.")   
-        
-#     except Exception:
-#         print("Error inserting product")
-#         conn.rollback()
-#         return None
-    
-
 # insert either customer or product into PostgreSQL, or update if already exists
 def insert_or_update(object, object_data):
     if object == "customer":
@@ -138,49 +51,28 @@ def insert_or_update(object, object_data):
 
             for field, value in object_data.items():
                 # if field in JSON is not equal to object_id and if the value is not equal to 
-                if field not in [f"{object}_id"] and value != results[field_names.index(field)]:
+                if field not in [f"{object}_id"] and value != results[names_column.index(field)]:
                     updates.append(f"{field} = %s")
                     update_values.append(value)
 
-    try:
-        cursor.execute(GET_CUSTOMER, cust_data["customer_id"])
-        results = cursor.fetchone()
-
-        # if customer already exists
-        if results:
-            customer_id, name, email, address = results
-            updates = []
-            update_values = []
-            if cust_data["name"] != name:
-                updates.append("name = %s")
-                update_values.append(cust_data["name"])
-
-            if cust_data["email"] != email:
-                updates.append("email = %s")
-                update_values.append(cust_data["email"])
-            
-            if cust_data["address"] != json.loads(address):
-                updates.append("address = %s")
-                update_values.append(json.dumps(cust_data["address"]))
-            
             if updates:
-                # Use dynamically generated fields for the update
-                update_query = UPDATE_CUSTOMER.format(fields_to_update=", ".join(updates))
-                update_values.append(customer_id)
+                update_query = update.format(fields_to_update=",".join(updates))
+                update_values.append(results[0]) # append object_id
                 cursor.execute(update_query, tuple(update_values))
-                print(f"Customer {cust_data['name']} ({cust_data['customer_id']}) updated.")
+                print(f"Object {object_data['name']} ({object_data[f"{object}_id"]}) updated.")
             else:
-                print(f"No changes for customer {cust_data['name']} ({cust_data['customer_id']}).")
+                print(f"No changes for object {object_data['name']} ({object_data[f"{object}_id"]}).")
 
         else:
-            # insert customer if not exist
-            customer_id = cursor.fetchone()[0]
-            cursor.execute(INSERT_CUSTOMER, 
-                           (cust_data['customer_id'], cust_data["name"], cust_data["email"], json.dumps(cust_data["address"])))
-            print(f"Customer {cust_data['name']} inserted with ID {customer_id}.")   
+            # insert object if not exist
+            cursor.execute(insert + " RETURNING id", tuple(object_data.values()))
+            entity_id = cursor.fetchone()[0]
+            print(f"{object} {object_data['name']} inserted with ID {entity_id}.")  
+        
+        conn.commit()
         
     except Exception:
-        print("Error inserting customer")
+        print("Error inserting object")
         conn.rollback()
         return None
     
