@@ -2,8 +2,8 @@
 # - Object-oriented route?
 # - pass cursor as argument, or it's okay?
 
-from flask import Flask
-import json
+from flask import Flask, request
+import json 
 import psycopg2
 
 app = Flask(__name__)
@@ -22,7 +22,7 @@ CREATE_WORKFLOWS = """CREATE TABLE IF NOT EXISTS workflows (id SERIAL PRIMARY KE
 
 INSERT_CUSTOMER = """INSERT INTO customers (customer_id, name, email, address) VALUES (%s, %s, %s, %s) RETURNING customer_id;"""
 INSERT_PRODUCT = """INSERT INTO products (product_id, name, price) VALUES (%s, %s, %s) RETURNING product_id;"""
-INSERT_ORDER = """INSERT INTO orders (order_id, customer_id, payment_method, total_price) VALUES (%s, %s, %s, %s) RETURNING order_id;"""
+INSERT_ORDER = """INSERT INTO orders (customer_id, payment_method, total_price) VALUES (%s, %s, %s) RETURNING order_id;""" 
 INSERT_WORKFLOW = """INSERT INTO workflowsteps (order_id, customer_id, payment_method, total_price) VALUES (%s, %s, %s, %s) RETURNING workflow_id;"""
 
 GET_CUSTOMER = """SELECT * FROM customers WHERE customer_id = %s"""
@@ -111,3 +111,20 @@ def json_to_db(json_file):
 
 
 json_to_db("schema.json")
+
+
+# Create order
+@app.route('/orders', methods=['POST'])
+def create_order():
+    data = request.get_json()
+    customer_id = data.get('customer_id')
+    payment_method = data.get('payment_method')
+    products = data.get('products')
+    total_price = sum(p['price'] * p['quantity'] for p in products)
+
+    cursor.execute(INSERT_ORDER, (customer_id, payment_method, total_price))
+    order_id = cursor.fetchone()[0]
+
+    
+
+    
