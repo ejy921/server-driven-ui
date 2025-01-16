@@ -35,21 +35,19 @@
             "description": "Products list",
             "fields": [
                 {
-                    "product1": {
-                        "product_id": 1,
-                        "name": "Dove Shampoo",
-                        "price": 9.50
-                    },
-                    "product2": {
-                        "product_id": 2,
-                        "name": "Dove Conditioner",
-                        "price": 8.50
-                    },
-                    "product3": {
-                        "product_id": 3,
-                        "name": "Himalaya Purifying Neem Face Wash",
-                        "price": 5.50
-                    }
+                    "product_id": 1,
+                    "name": "Dove Shampoo",
+                    "price": 9.50
+                },
+                {
+                    "product_id": 2,
+                    "name": "Dove Conditioner",
+                    "price": 8.50
+                },
+                {
+                    "product_id": 3,
+                    "name": "Himalaya Purifying Neem Face Wash",
+                    "price": 5.50
                 }
             ]
         }

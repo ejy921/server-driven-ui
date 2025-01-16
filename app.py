@@ -1,3 +1,7 @@
+# Few concerns:
+# - Object-oriented route?
+# - pass cursor as argument, or it's okay?
+
 from flask import Flask
 import json
 import psycopg2
@@ -9,17 +13,20 @@ conn = psycopg2.connect(host='localhost',
                             user='postgres',
                             password='jinny5527024')
 
-
-
 # create cursor obj to interact with db
 cursor = conn.cursor()
 
-# SQL commands
-INSERT_CUSTOMER = """INSERT INTO customers (customer_id, name, email, address) VALUES (%s, %s, %s, %s) RETURNING id;"""
-INSERT_PRODUCT = """INSERT INTO products (product_id name, price) VALUES (%s, %s, %s) RETURNING id;"""
+# SQL commands 
+CREATE_ORDERS = """CREATE TABLE IF NOT EXISTS orders (id SERIAL PRIMARY KEY, name TEXT);"""
+CREATE_WORKFLOWS = """CREATE TABLE IF NOT EXISTS workflows (id SERIAL PRIMARY KEY, name TEXT);"""
 
-GET_CUSTOMER = """SELECT id FROM customers WHERE email = %s"""
-GET_PRODUCT = """SELECT id FROM products WHERE name = %s"""
+INSERT_CUSTOMER = """INSERT INTO customers (customer_id, name, email, address) VALUES (%s, %s, %s, %s) RETURNING customer_id;"""
+INSERT_PRODUCT = """INSERT INTO products (product_id, name, price) VALUES (%s, %s, %s) RETURNING product_id;"""
+INSERT_ORDER = """INSERT INTO orders (order_id, customer_id, payment_method, total_price) VALUES (%s, %s, %s, %s) RETURNING order_id;"""
+INSERT_WORKFLOW = """INSERT INTO workflowsteps (order_id, customer_id, payment_method, total_price) VALUES (%s, %s, %s, %s) RETURNING workflow_id;"""
+
+GET_CUSTOMER = """SELECT * FROM customers WHERE customer_id = %s"""
+GET_PRODUCT = """SELECT * FROM products WHERE product_id = %s"""
 
 UPDATE_CUSTOMER = """UPDATE customers
                 SET {fields_to_update}
@@ -38,9 +45,17 @@ def insert_or_update(object, object_data):
         get = GET_PRODUCT
         insert = INSERT_PRODUCT
         update = UPDATE_PRODUCT
+    else:
+        print("Cannot identify object type")
+        return None
 
     try:
-        cursor.execute(get, object_data[f"{object}_id"])
+        # serialize to JSON if value is dictionary (customer address)
+        for field, value in object_data.items():
+            if isinstance(value, dict):
+                object_data[field] = json.dumps(value)
+
+        cursor.execute(get, (object_data[f"{object}_id"],))
         results = cursor.fetchone() # results from PostgreSQL: the keys of the data (e.g. name, email, price, etc.)
 
         # if object already exists
@@ -65,21 +80,19 @@ def insert_or_update(object, object_data):
 
         else:
             # insert object if not exist
-            cursor.execute(insert + " RETURNING id", tuple(object_data.values()))
+            cursor.execute(insert, tuple(object_data.values()))
             entity_id = cursor.fetchone()[0]
             print(f"{object} {object_data['name']} inserted with ID {entity_id}.")  
         
         conn.commit()
         
-    except Exception:
-        print("Error inserting object")
+    except Exception as e:
+        print(f"Error inserting object {e}")
         conn.rollback()
         return None
     
-
-
 # parse through json and insert
-def json_to_db(json_file, conn, cursor):
+def json_to_db(json_file):
     with open(json_file, 'r') as file:
         data = json.load(file)
     
@@ -95,3 +108,6 @@ def json_to_db(json_file, conn, cursor):
                 product_id = insert_or_update("product", product)
                 if product_id:
                     print(f"Product {product['name']} inserted with ID {product_id}")
+
+
+json_to_db("schema.json")
