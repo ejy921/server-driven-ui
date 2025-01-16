@@ -1,0 +1,18 @@
+# Ignore Python virtual environments
+venv/
+.env/
+SDUI/
+
+# Byte-compiled and cache files
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+
+# Miscellaneous
+*.log
+*.sqlite3
+.DS_Store
+.idea/
+.vscode/
