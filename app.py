@@ -2,7 +2,7 @@
 # - Object-oriented route?
 # - pass cursor as argument, or it's okay?
 
-from flask import Flask, request
+from flask import Flask, jsonify
 import json 
 import psycopg2
 
@@ -25,6 +25,8 @@ INSERT_PRODUCT = """INSERT INTO products (product_id, name, price) VALUES (%s, %
 INSERT_ORDER = """INSERT INTO orders (customer_id, payment_method, total_price) VALUES (%s, %s, %s) RETURNING order_id;""" 
 INSERT_WORKFLOW = """INSERT INTO workflowsteps (order_id, customer_id, payment_method, total_price) VALUES (%s, %s, %s, %s) RETURNING workflow_id;"""
 
+GET_CUSTOMERS = """SELECT * FROM customers"""
+GET_PRODUCTS = """SELECT * FROM products"""
 GET_CUSTOMER = """SELECT * FROM customers WHERE customer_id = %s"""
 GET_PRODUCT = """SELECT * FROM products WHERE product_id = %s"""
 
@@ -113,18 +115,24 @@ def json_to_db(json_file):
 json_to_db("schema.json")
 
 
-# Create order
-@app.route('/orders', methods=['POST'])
-def create_order():
-    data = request.get_json()
-    customer_id = data.get('customer_id')
-    payment_method = data.get('payment_method')
-    products = data.get('products')
-    total_price = sum(p['price'] * p['quantity'] for p in products)
+@app.route('/api/products', methods=['GET'])
+def get_products():
+    try:
+        cursor.execute(GET_PRODUCTS)
+        products = cursor.fetchall()
+        # format products as dictionary
+        product_list = [
+            {"index": idx, "id": row[0], "name": row[1], "price": float(row[2])}
+            for idx, row in enumerate(products)
+        ]
 
-    cursor.execute(INSERT_ORDER, (customer_id, payment_method, total_price))
-    order_id = cursor.fetchone()[0]
-
+        return jsonify(product_list), 200 # HTML code for successful request
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     
+print(get_products())
+
+
+
 
     
